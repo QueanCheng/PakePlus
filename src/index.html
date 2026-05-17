@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>电子签名系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 20px;
+            padding: 30px;
+            flex-wrap: wrap;
+        }
+
+        .left-panel {
+            flex: 1;
+            min-width: 300px;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .right-panel {
+            flex: 2;
+            min-width: 600px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .section-title {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #667eea;
+            border-radius: 2px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(235, 51, 73, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .file-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+
+        .file-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .canvas-container {
+            position: relative;
+            background: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            min-height: 500px;
+        }
+
+        #mainCanvas {
+            display: block;
+            cursor: crosshair;
+        }
+
+        .draggable-item {
+            position: absolute;
+            cursor: move;
+            user-select: none;
+        }
+
+        .draggable-item.selected {
+            outline: 2px dashed #667eea;
+            outline-offset: 2px;
+        }
+
+        .draggable-item img {
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .signature-pad {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            background: white;
+            cursor: crosshair;
+            touch-action: none;
+        }
+
+        .control-panel {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .control-group {
+            margin-bottom: 15px;
+        }
+
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .slider-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .id-card-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .id-card-upload {
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+            padding: 20px;
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .id-card-upload:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        .id-card-upload.has-image {
+            border-style: solid;
+            background: #f8f9fa;
+        }
+
+        .id-card-upload img {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .instructions {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 5px;
+        }
+
+        .instructions h4 {
+            color: #1976D2;
+            margin-bottom: 10px;
+        }
+
+        .instructions ol {
+            margin-left: 20px;
+            color: #555;
+        }
+
+        .instructions li {
+            margin-bottom: 5px;
+        }
+
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .loading.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            z-index: 10000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .toast.error {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                flex-direction: column;
+            }
+
+            .right-panel {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>家长知情同意书-电子签名系统</h1>
+            <p>专业解决喵酱的懒癌晚期问题</p>
+        </div>
+
+        <div class="main-content">
+            <div class="left-panel">
+                <div class="section">
+                    <h3 class="section-title">背景图片</h3>
+                    <label class="file-label">
+                        上传背景图片
+                        <input type="file" id="bgUpload" accept="image/*">
+                    </label>
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="resetBackground()">重置背景</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3 class="section-title">手写签名</h3>
+                    <canvas id="signatureCanvas" class="signature-pad" width="400" height="200"></canvas>
+                    <div class="btn-group">
+                        <button class="btn btn-success" onclick="saveSignature()">使用签名</button>
+                        <button class="btn btn-secondary" onclick="clearSignature()">清空</button>
+                        <button class="btn btn-danger" onclick="redoSignature()">重写</button>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3 class="section-title">身份证照片</h3>
+                    <div class="id-card-container">
+                        <div class="id-card-upload" id="idFrontUpload" onclick="document.getElementById('idFront').click()">
+                            <div class="icon">🆔</div>
+                            <div>上传正面</div>
+                            <input type="file" id="idFront" accept="image/*" onchange="handleIdCard(this, 'front')">
+                            <img id="idFrontPreview" style="display: none;">
+                        </div>
+                        <div class="id-card-upload" id="idBackUpload" onclick="document.getElementById('idBack').click()">
+                            <div class="icon">🆔</div>
+                            <div>上传反面</div>
+                            <input type="file" id="idBack" accept="image/*" onchange="handleIdCard(this, 'back')">
+                            <img id="idBackPreview" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3 class="section-title">导出</h3>
+                    <button class="btn btn-success" style="width: 100%;" onclick="downloadImage()">💾 下载合成图片</button>
+                </div>
+
+                <div class="instructions">
+                    <h4>使用说明</h4>
+                    <ol>
+                        <li>上传背景图片（可选）</li>
+                        <li>在签名板手写签名</li>
+                        <li>上传身份证正反面（可选）</li>
+                        <li>拖拽元素调整位置</li>
+                        <li>使用滑块控制大小和旋转</li>
+                        <li>点击下载合成图片</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="canvas-container">
+                    <canvas id="mainCanvas" width="800" height="600"></canvas>
+                </div>
+
+                <div class="control-panel" id="controlPanel" style="display: none;">
+                    <div class="control-group">
+                        <label>📐 大小调整</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="sizeSlider" min="10" max="200" value="100" oninput="updateElement()">
+                            <span class="slider-value" id="sizeValue">100%</span>
+                        </div>
+                    </div>
+                    <div class="control-group">
+                        <label>🔄 旋转角度</label>
+                        <div class="slider-container">
+                            <input type="range" class="slider" id="rotateSlider" min="0" max="360" value="0" oninput="updateElement()">
+                            <span class="slider-value" id="rotateValue">0°</span>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-danger" onclick="deleteSelected()">🗑️ 删除选中</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="loading" id="loading">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // 全局变量
+        let mainCanvas = document.getElementById('mainCanvas');
+        let mainCtx = mainCanvas.getContext('2d');
+        let signatureCanvas = document.getElementById('signatureCanvas');
+        let signatureCtx = signatureCanvas.getContext('2d');
+        
+        let backgroundImage = null;
+        let elements = []; // 存储所有可拖拽元素
+        let selectedElement = null;
+        let isDrawing = false;
+        let lastX = 0;
+        let lastY = 0;
+
+        // 初始化签名板
+        function initSignaturePad() {
+            signatureCtx.strokeStyle = '#000';
+            signatureCtx.lineWidth = 2;
+            signatureCtx.lineCap = 'round';
+            signatureCtx.lineJoin = 'round';
+            
+            // 鼠标事件
+            signatureCanvas.addEventListener('mousedown', startDrawing);
+            signatureCanvas.addEventListener('mousemove', draw);
+            signatureCanvas.addEventListener('mouseup', stopDrawing);
+            signatureCanvas.addEventListener('mouseout', stopDrawing);
+            
+            // 触摸事件
+            signatureCanvas.addEventListener('touchstart', handleTouchStart);
+            signatureCanvas.addEventListener('touchmove', handleTouchMove);
+            signatureCanvas.addEventListener('touchend', stopDrawing);
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+            signatureCtx.beginPath();
+            signatureCtx.moveTo(lastX, lastY);
+            signatureCtx.lineTo(e.offsetX, e.offsetY);
+            signatureCtx.stroke();
+            [lastX, lastY] = [e.offsetX, e.offsetY];
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+        }
+
+        function handleTouchStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = signatureCanvas.getBoundingClientRect();
+            isDrawing = true;
+            lastX = touch.clientX - rect.left;
+            lastY = touch.clientY - rect.top;
+        }
+
+        function handleTouchMove(e) {
+            e.preventDefault();
+            if (!isDrawing) return;
+            const touch = e.touches[0];
+            const rect = signatureCanvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            signatureCtx.beginPath();
+            signatureCtx.moveTo(lastX, lastY);
+            signatureCtx.lineTo(x, y);
+            signatureCtx.stroke();
+            [lastX, lastY] = [x, y];
+        }
+
+        function clearSignature() {
+            signatureCtx.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+        }
+
+        function redoSignature() {
+            clearSignature();
+        }
+
+        function saveSignature() {
+            // 检查是否有签名内容
+            const imageData = signatureCtx.getImageData(0, 0, signatureCanvas.width, signatureCanvas.height);
+            const isEmpty = !imageData.data.some(channel => channel !== 0);
+            
+            if (isEmpty) {
+                showToast('请先绘制签名', 'error');
+                return;
+            }
+
+            // 创建透明背景的签名图片
+            const signatureImage = new Image();
+            signatureImage.src = signatureCanvas.toDataURL('image/png');
+            signatureImage.onload = () => {
+                const element = {
+                    type: 'signature',
+                    image: signatureImage,
+                    x: 50,
+                    y: 50,
+                    width: 200,
+                    height: 100,
+                    scale: 1,
+                    rotation: 0
+                };
+                elements.push(element);
+                drawCanvas();
+                showToast('签名已添加', 'success');
+                clearSignature();
+            };
+        }
+
+        // 背景图片上传
+        document.getElementById('bgUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        backgroundImage = img;
+                        // 调整画布大小以适应图片
+                        const maxWidth = 800;
+                        const maxHeight = 600;
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > maxWidth) {
+                            height = height * (maxWidth / width);
+                            width = maxWidth;
+                        }
+                        if (height > maxHeight) {
+                            width = width * (maxHeight / height);
+                            height = maxHeight;
+                        }
+                        
+                        mainCanvas.width = width;
+                        mainCanvas.height = height;
+                        drawCanvas();
+                        showToast('背景图片已加载', 'success');
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        function resetBackground() {
+            backgroundImage = null;
+            mainCanvas.width = 800;
+            mainCanvas.height = 600;
+            drawCanvas();
+            showToast('背景已重置', 'success');
+        }
+
+        // 身份证上传
+        function handleIdCard(input, side) {
+            const file = input.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const element = {
+                            type: 'idcard_' + side,
+                            image: img,
+                            x: 50,
+                            y: 50,
+                            width: 150,
+                            height: 100,
+                            scale: 1,
+                            rotation: 0
+                        };
+                        elements.push(element);
+                        drawCanvas();
+                        
+                        // 显示预览
+                        const preview = document.getElementById('id' + (side === 'front' ? 'Front' : 'Back') + 'Preview');
+                        const uploadDiv = document.getElementById('id' + (side === 'front' ? 'Front' : 'Back') + 'Upload');
+                        preview.src = event.target.result;
+                        preview.style.display = 'block';
+                        uploadDiv.classList.add('has-image');
+                        
+                        showToast('身份证' + (side === 'front' ? '正面' : '反面') + '已添加', 'success');
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // 画布绘制
+        function drawCanvas() {
+            mainCtx.clearRect(0, 0, mainCanvas.width, mainCanvas.height);
+            
+            // 绘制背景
+            if (backgroundImage) {
+                mainCtx.drawImage(backgroundImage, 0, 0, mainCanvas.width, mainCanvas.height);
+            } else {
+                // 默认白色背景
+                mainCtx.fillStyle = '#ffffff';
+                mainCtx.fillRect(0, 0, mainCanvas.width, mainCanvas.height);
+            }
+            
+            // 绘制所有元素
+            elements.forEach(element => {
+                mainCtx.save();
+                mainCtx.translate(element.x + element.width / 2, element.y + element.height / 2);
+                mainCtx.rotate(element.rotation * Math.PI / 180);
+                mainCtx.scale(element.scale, element.scale);
+                mainCtx.drawImage(element.image, -element.width / 2, -element.height / 2, element.width, element.height);
+                mainCtx.restore();
+                
+                // 如果选中，绘制边框
+                if (element === selectedElement) {
+                    mainCtx.save();
+                    mainCtx.translate(element.x + element.width / 2, element.y + element.height / 2);
+                    mainCtx.rotate(element.rotation * Math.PI / 180);
+                    mainCtx.scale(element.scale, element.scale);
+                    mainCtx.strokeStyle = '#667eea';
+                    mainCtx.lineWidth = 2;
+                    mainCtx.setLineDash([5, 5]);
+                    mainCtx.strokeRect(-element.width / 2, -element.height / 2, element.width, element.height);
+                    mainCtx.restore();
+                }
+            });
+        }
+
+        // 鼠标事件处理 - 拖拽
+        let isDragging = false;
+        let dragStartX = 0;
+        let dragStartY = 0;
+
+        mainCanvas.addEventListener('mousedown', function(e) {
+            const rect = mainCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            // 从后往前检查，选中最近添加的元素
+            for (let i = elements.length - 1; i >= 0; i--) {
+                const element = elements[i];
+                if (x >= element.x && x <= element.x + element.width &&
+                    y >= element.y && y <= element.y + element.height) {
+                    selectedElement = element;
+                    isDragging = true;
+                    dragStartX = x - element.x;
+                    dragStartY = y - element.y;
+                    updateControlPanel();
+                    drawCanvas();
+                    return;
+                }
+            }
+            
+            // 点击空白处，取消选中
+            selectedElement = null;
+            document.getElementById('controlPanel').style.display = 'none';
+            drawCanvas();
+        });
+
+        mainCanvas.addEventListener('mousemove', function(e) {
+            if (!isDragging || !selectedElement) return;
+            
+            const rect = mainCanvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            selectedElement.x = x - dragStartX;
+            selectedElement.y = y - dragStartY;
+            
+            drawCanvas();
+        });
+
+        mainCanvas.addEventListener('mouseup', function() {
+            isDragging = false;
+        });
+
+        mainCanvas.addEventListener('mouseout', function() {
+            isDragging = false;
+        });
+
+        // 触摸事件支持
+        mainCanvas.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = mainCanvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            for (let i = elements.length - 1; i >= 0; i--) {
+                const element = elements[i];
+                if (x >= element.x && x <= element.x + element.width &&
+                    y >= element.y && y <= element.y + element.height) {
+                    selectedElement = element;
+                    isDragging = true;
+                    dragStartX = x - element.x;
+                    dragStartY = y - element.y;
+                    updateControlPanel();
+                    drawCanvas();
+                    return;
+                }
+            }
+        });
+
+        mainCanvas.addEventListener('touchmove', function(e) {
+            e.preventDefault();
+            if (!isDragging || !selectedElement) return;
+            
+            const touch = e.touches[0];
+            const rect = mainCanvas.getBoundingClientRect();
+            const x = touch.clientX - rect.left;
+            const y = touch.clientY - rect.top;
+            
+            selectedElement.x = x - dragStartX;
+            selectedElement.y = y - dragStartY;
+            
+            drawCanvas();
+        });
+
+        mainCanvas.addEventListener('touchend', function() {
+            isDragging = false;
+        });
+
+        // 更新控制面板
+        function updateControlPanel() {
+            if (selectedElement) {
+                document.getElementById('controlPanel').style.display = 'block';
+                document.getElementById('sizeSlider').value = selectedElement.scale * 100;
+                document.getElementById('sizeValue').textContent = Math.round(selectedElement.scale * 100) + '%';
+                document.getElementById('rotateSlider').value = selectedElement.rotation;
+                document.getElementById('rotateValue').textContent = selectedElement.rotation + '°';
+            } else {
+                document.getElementById('controlPanel').style.display = 'none';
+            }
+        }
+
+        // 更新元素
+        function updateElement() {
+            if (!selectedElement) return;
+            
+            const scale = document.getElementById('sizeSlider').value / 100;
+            const rotation = document.getElementById('rotateSlider').value;
+            
+            selectedElement.scale = scale;
+            selectedElement.rotation = rotation;
+            
+            document.getElementById('sizeValue').textContent = Math.round(scale * 100) + '%';
+            document.getElementById('rotateValue').textContent = rotation + '°';
+            
+            drawCanvas();
+        }
+
+        // 删除选中元素
+        function deleteSelected() {
+            if (!selectedElement) {
+                showToast('请先选中一个元素', 'error');
+                return;
+            }
+            
+            elements = elements.filter(e => e !== selectedElement);
+            selectedElement = null;
+            document.getElementById('controlPanel').style.display = 'none';
+            drawCanvas();
+            showToast('元素已删除', 'success');
+        }
+
+        // 下载图片
+        function downloadImage() {
+            if (!backgroundImage && elements.length === 0) {
+                showToast('请先添加内容', 'error');
+                return;
+            }
+            
+            // 取消选中状态
+            selectedElement = null;
+            drawCanvas();
+            
+            // 创建下载链接
+            const link = document.createElement('a');
+            link.download = '电子签名_' + new Date().getTime() + '.png';
+            link.href = mainCanvas.toDataURL('image/png');
+            link.click();
+            
+            showToast('图片已下载', 'success');
+        }
+
+        // 提示消息
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            
+            setTimeout(() => {
+                toast.className = 'toast';
+            }, 2000);
+        }
+
+        // 键盘删除支持
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Delete' || e.key === 'Backspace') {
+                if (selectedElement) {
+                    deleteSelected();
+                }
+            }
+        });
+
+        // 初始化
+        initSignaturePad();
+        drawCanvas();
+    </script>
+</body>
+</html>       drawCanvas();
+    </script>
+</body>
+</html>
